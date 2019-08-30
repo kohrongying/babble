@@ -2,6 +2,8 @@
 title: Revisiting Expense Tracker
 date: 2019-08-23 23:20:16
 tags:
+- reactjs
+- Expense Tracker
 ---
 
 So in 2018, I wrote my first react app with coupled with firebase myself. It served me pretty well - a basic crud for expenses. A year on, <!-- more -->I decided to take a look at what I've done and do some much needed maintenance.
