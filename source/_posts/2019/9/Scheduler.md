@@ -9,7 +9,7 @@ tags:
 - python
 ---
 
-This week at work I had a new task and got to try out Google Cloud Functions and Scheduler (Cron Job). 
+This week at work I had a new task and got to try out Google Cloud Functions and Scheduler (Cron Job).<!-- more -->
 
 ## Task
 1. Scrape website
