@@ -2,8 +2,8 @@
 title: React JS Bindings
 date: 2019-04-15 23:47:12
 tags:
-- React
-- Javascript
+- react
+- javascript
 ---
 
 Today I've been stumped over a simple (I consider most things basic for a developer D:) error for a good period of time <!-- more --> (I have no idea how long - it felt like hours but I'm sure it was not an hour)

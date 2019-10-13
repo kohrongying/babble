@@ -2,7 +2,7 @@
 title: css-battle portfolio
 date: 2019-04-23 00:10:02
 tags:
-- cssbattle
+- css
 - polymer
 - lit-html
 - git subtree

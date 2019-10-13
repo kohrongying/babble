@@ -2,7 +2,7 @@
 title: Revisiting Expense Tracker
 date: 2019-08-23 23:20:16
 tags:
-- reactjs
+- react
 - Expense Tracker
 ---
 
