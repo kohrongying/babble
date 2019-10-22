@@ -13,8 +13,8 @@ timezone: Asia/Singapore
 
 # URL
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
-url: https://kohrongying.github.io/babble
-root: /babble/
+url: https://blog.rongying.co
+# root: /babble/
 permalink: :year/:month/:day/:title/
 permalink_defaults:
 
