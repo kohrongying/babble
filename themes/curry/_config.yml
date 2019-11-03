@@ -8,9 +8,9 @@ author: rongying
 aboutme: just a plebeian
 
 # Content
-excerpt_link: ...Read More
+excerpt_link: Read More...
 fancybox: true
-date_format: 'YYYYMMDD'
+date_format: 'YYYY-MM-DD'
 
 socials:
   github: "https://github.com/kohrongying"
