@@ -40,8 +40,7 @@ show_count: false
 disqus_shortname:
 
 # Miscellaneous
-# google_analytics: 'UA-61220413-1'
-gauges_analytics:
+google_analytics: 'UA-109820124-3'
 favicon: images/favicon.ico
 avatar: "images/avatar.jpeg"
 twitter:
