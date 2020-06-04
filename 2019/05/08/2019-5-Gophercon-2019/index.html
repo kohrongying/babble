@@ -1,0 +1,56 @@
+<!DOCTYPE html><html><head><meta name="generator" content="Hexo 3.9.0"><meta charset="utf-8"><meta name="description"><meta name="keyword"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Gophercon 2019</title><link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon"><link href="/styles/site.css" rel="stylesheet"></head><body><header class="container" id="header"><div class="header"><div class="header-left"><div class="avatar"><img src="/images/avatar.jpeg"></div><div class="author"><div class="author-name"><a href="/">rongying</a></div><div class="about-me">just a plebeian</div></div></div><div class="header-right"><ul class="navigation"><li><a href="archives">Archives</a></li></ul></div><div class="about-me-mask"><div class="about-me-wrap"><div class="about-me__header"><div class="avatar"><img src="/images/avatar.jpeg"></div></div><ul class="socials"><li class="social-item"><span class="label"><img src="/images/socials/github.svg" alt="https://github.com/kohrongying"></span><a href="https://github.com/kohrongying" target="_blank" title="https://github.com/kohrongying">https://github.com/kohrongying</a></li><li class="social-item"><span class="label"><img src="/images/socials/email.svg" alt="kohrongying@gmail.com"></span><span>kohrongying@gmail.com</span></li></ul></div></div></div></header><div class="container post"><section class="article"><div class="title">Gophercon 2019</div><div class="date">2019-05-08</div><div class="content"><p>Gophercon lasted for a week on 28 Apr 2019 to 3 May 2019.<br><a id="more"></a></p>
+<p>I was quite lucky that my company sent us to go for the Ultimate Go workshop in order to up our golang skills. </p>
+<p>Don’t think I’ll be able to list down everything we’ve learnt! (Felt weird being a student again - I was taking down notes and suffering from food coma after lunch. (It didn’t help that we had like food 4 times a day (ooh nested statements haha)))</p>
+<p>But just gonna mention things that I found significant.</p>
+<h1 id="Basic-Syntax"><a href="#Basic-Syntax" class="headerlink" title="Basic Syntax"></a>Basic Syntax</h1><ol>
+<li>Pointers</li>
+</ol>
+<ul>
+<li>Finally understood how the pointer refers to the memory address of the variable<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> count <span class="keyword">int</span></span><br><span class="line"><span class="keyword">var</span> address *<span class="keyword">int</span>  <span class="comment">// A pointer variable</span></span><br><span class="line">address = &amp;count  <span class="comment">// The memory address of count</span></span><br><span class="line">*address          <span class="comment">// derefernce pointer</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<ol start="2">
+<li>Slices</li>
+</ol>
+<ul>
+<li>Basically mutable while arrays are not</li>
+<li>Golang does alot of background work to make sure that slices are in one contiguous block of memory to allow iteration to be blazing fast! </li>
+<li>Thus led to concept of capacity and length</li>
+<li>Linked to the concept about memory and how go tries to compile code in the way that tries to improve mechanical sympathy </li>
+</ul>
+<ol start="3">
+<li>Maps</li>
+</ol>
+<ul>
+<li>Fast in lookup but not iteration (no contiguous block of memory)</li>
+</ul>
+<h3 id="Concurrency"><a href="#Concurrency" class="headerlink" title="Concurrency"></a>Concurrency</h3><p>I feel that I learnt more about go through concurrency. And how easy and straightforward it made concurrency haha. </p>
+<ol>
+<li>Go routines</li>
+</ol>
+<p>So usually, go runs code in one main thread. But we can specify more threads, through the use of <code>go routines</code>.</p>
+<p>They look something like:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span>&#123;</span><br><span class="line"> <span class="comment">// do something </span></span><br><span class="line">&#125;()</span><br></pre></td></tr></table></figure></p>
+<ol start="2">
+<li>Wait Group</li>
+</ol>
+<p>Part of the <code>sync</code> package, wait groups allow us to specify the number of jobs/threads there are through provisioning a counter then decrementing the counter when jobs/threads are complete. This allows us to await till all jobs are done. Something like a async/await block in javascript!<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> wg sync.WaitGroup</span><br><span class="line"></span><br><span class="line">wg.Add(<span class="number">1</span>) <span class="comment">// Add tasks</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">  wg.Done() <span class="comment">// Decrement when task is done</span></span><br><span class="line">&#125;()</span><br><span class="line"></span><br><span class="line">wg.Wait() <span class="comment">// awaits</span></span><br><span class="line">fmt.Println(<span class="string">"DONE!"</span>)</span><br></pre></td></tr></table></figure></p>
+<ol start="3">
+<li>Data Integrity &amp; Data races</li>
+</ol>
+<p>To prevent data races and inaccuracy of data, we were introduced the use of <code>atomic</code> and <code>mutex</code>. For updating numbers like count or values, we can use <code>atomic</code> which means, only one <code>atomic</code> operator can occur at any one time, all threads will be blocked when that happens.</p>
+<p><code>mutex</code> works in a simliar function, whereby all threads block when one thread uses <code>mutex.Lock()</code>.</p>
+<p>It is important to make sure <code>mutex.Unlock()</code> is called, else deadlock might occur.</p>
+<ol start="3">
+<li>Channels</li>
+</ol>
+<p>Didn’t really get it the first time jiayu explained but I get this one! It is literally imagined to be a tunnel, in my head haha. Like someone sending chat messages or something </p>
+<p>Switch was pretty cool too.</p>
+<ol start="4">
+<li>Pitfalls of concurrency</li>
+</ol>
+<p>We went through some pitfalls like data races, deadlocks etc, but what’s interesting was that over-complicating the problem using go routines and channels was also a pitfall. </p>
+<p>We might get excited and jump into using channels as our solution for a problem, but it may not necessarily but the best. Running synchronously should still be an option! :) </p>
+<p>Ok thats all :) Can’t wait for Gophercon 2020 haha.</p>
+</div><div class="tags"><a class="tag-link" href="/tags/golang/">golang</a><a class="tag-link" href="/tags/gophercon/">gophercon</a></div></section></div><div class="container"><ul class="nav"><li>Another one:<a href="/2019/06/30/2019-6-Netlify-Forms/">Netlify Forms</a></li><li>Previous one:<a href="/2019/05/08/2019-5-exposing-other-attributes-as-JSON-in-Rails-Models/">Exposing Other Attributes as JSON in Rails Models</a></li></ul></div><div id="backToTop"><div class="back-arrow back-arrow-left"></div><div class="back-arrow back-arrow-right"></div></div><footer class="container"><div class="rights"><span>Powered by </span><a href="http://hexo.io" target="_blank">Hexo</a><span>, Theme </span><a href="https://github.com/gary-Shen/hexo-theme-curry" target="_blank">Curry</a><span>.</span></div></footer><script src="/script/jquery.min.js"></script><link rel="stylesheet" href="/fancybox/jquery.fancybox.css"><script src="/fancybox/jquery.fancybox.pack.js"></script><script src="/script/index.js"></script><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+ga('create', 'UA-109820124-3', 'auto');
+ga('send', 'pageview');</script><script src="/script/jquery.min.js"></script><link rel="stylesheet" href="/fancybox/jquery.fancybox.css"><script src="/fancybox/jquery.fancybox.pack.js"></script><script src="/script/index.js"></script><script src="/script/post.js"></script></body></html>

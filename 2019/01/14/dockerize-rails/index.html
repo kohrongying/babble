@@ -1,0 +1,88 @@
+<!DOCTYPE html><html><head><meta name="generator" content="Hexo 3.9.0"><meta charset="utf-8"><meta name="description"><meta name="keyword"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Circle CI Workflow With Ruby on Rails and Docker</title><link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon"><link href="/styles/site.css" rel="stylesheet"></head><body><header class="container" id="header"><div class="header"><div class="header-left"><div class="avatar"><img src="/images/avatar.jpeg"></div><div class="author"><div class="author-name"><a href="/">rongying</a></div><div class="about-me">just a plebeian</div></div></div><div class="header-right"><ul class="navigation"><li><a href="archives">Archives</a></li></ul></div><div class="about-me-mask"><div class="about-me-wrap"><div class="about-me__header"><div class="avatar"><img src="/images/avatar.jpeg"></div></div><ul class="socials"><li class="social-item"><span class="label"><img src="/images/socials/github.svg" alt="https://github.com/kohrongying"></span><a href="https://github.com/kohrongying" target="_blank" title="https://github.com/kohrongying">https://github.com/kohrongying</a></li><li class="social-item"><span class="label"><img src="/images/socials/email.svg" alt="kohrongying@gmail.com"></span><span>kohrongying@gmail.com</span></li></ul></div></div></div></header><div class="container post"><section class="article"><div class="title">Circle CI Workflow With Ruby on Rails and Docker</div><div class="date">2019-01-14</div><div class="content"><h2 id="tldr"><a href="#tldr" class="headerlink" title="tldr;"></a>tldr;</h2><ul>
+<li>Dockerize RoR with Nginx</li>
+<li>Circle CI <a id="more"></a>
+</li>
+</ul>
+<h2 id="Dockerize-Rails"><a href="#Dockerize-Rails" class="headerlink" title="Dockerize Rails"></a>Dockerize Rails</h2><p>The first step is to create your rails app using the Rails CLI: <code>rails new myapp</code>. </p>
+<p>Our way of dockerizing is simple - since our database will be on a managed instance on GCP, we will have our rails app as one container service and a reverse proxy (nginx) as our other container service.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># Dockerfile</span><br><span class="line">FROM ruby:2.5.3</span><br><span class="line">RUN mkdir -p /usr/src/app</span><br><span class="line">WORKDIR /usr/src/app</span><br><span class="line">RUN apt-get update </span><br><span class="line">RUN apt-get install -y nodejs postgresql-client build-essential</span><br><span class="line">COPY Gemfile /usr/src/app/</span><br><span class="line">RUN bundle install</span><br><span class="line">COPY . /usr/src/app</span><br><span class="line">EXPOSE 3000</span><br><span class="line">CMD [&quot;bundle&quot;, &quot;exec&quot;, &quot;puma&quot;, &quot;-C&quot;, &quot;config/puma.rb&quot;]</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># Dockerfile-nginx</span><br><span class="line">FROM nginx</span><br><span class="line">RUN apt-get update -qq &amp;&amp; apt-get -y install apache2-utils</span><br><span class="line">ENV RAILS_ROOT /usr/src/app</span><br><span class="line">WORKDIR $RAILS_ROOT</span><br><span class="line">RUN mkdir log</span><br><span class="line">COPY public public/</span><br><span class="line">COPY config/nginx.conf /tmp/docker_example.nginx</span><br><span class="line">RUN envsubst &apos;$RAILS_ROOT&apos; &lt; /tmp/docker_example.nginx &gt; /etc/nginx/conf.d/default.conf</span><br><span class="line">EXPOSE 80</span><br><span class="line">CMD [ &quot;nginx&quot;, &quot;-g&quot;, &quot;daemon off;&quot; ]</span><br></pre></td></tr></table></figure>
+<p>Add an <a href="https://codepany.com/blog/rails-5-and-docker-puma-nginx/#crayon-5c3c29a8a6e6f239458221" target="_blank" rel="noopener">nginx file</a> under <code>config/nginx.conf</code>.</p>
+<p>We would build both files individually, but our CI will handle the building of the rails app for us. So, we just have to build the nginx service ourselves and once.<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker build -t &lt;repo&gt;/rails-nginx -f Dockerfile-nginx .</span><br><span class="line">docker push &lt;repo&gt;/rails-nginx</span><br></pre></td></tr></table></figure></p>
+<h2 id="Circle-CI"><a href="#Circle-CI" class="headerlink" title="Circle CI"></a>Circle CI</h2><p>Yay new territory marked as we forage into this unknown land. What we envision our CI to do is:</p>
+<ol>
+<li>On every git push, run tests</li>
+<li>Build container image</li>
+<li>Migrate Staging/Production DB</li>
+<li>Deploy to Staging/Production environments</li>
+</ol>
+<p>We would define one workflow, with four jobs, as the structure for our circle ci config file. </p>
+<img src="/2019/01/14/dockerize-rails/dockerize-rails-1.png" title="workflow image">
+<p>Each job is run in a Circle CI Build Environment - determined by the <a href="https://circleci.com/docs/2.0/configuration-reference/#docker--machine--macosexecutor" target="_blank" rel="noopener">executor</a> (docker/machine)</p>
+<ul>
+<li><code>docker</code> allows you to choose the image you want</li>
+<li><code>machine:true</code> is a classic set of images (mainly Ubuntu)<ul>
+<li>good for simple commands like building images like what we’re going to do </li>
+</ul>
+</li>
+<li><code>macos</code> mainly for building, testing appls for macOS, iOS and tvOS (wa so nice)</li>
+</ul>
+<p>Won’t be sharing the <code>config.yml</code> file here as its very long but just some important points to take note!</p>
+<h3 id="Running-Tests"><a href="#Running-Tests" class="headerlink" title="Running Tests"></a>Running Tests</h3><ul>
+<li>Use a docker image (ruby)</li>
+<li><code>checkout</code> the repo</li>
+<li>bundle install </li>
+<li>set up test environment <ul>
+<li>Very important that you specify a <code>DATABASE_URL</code> field in either your config.yml or database.yml file </li>
+</ul>
+</li>
+</ul>
+<h3 id="Building-Image"><a href="#Building-Image" class="headerlink" title="Building Image"></a>Building Image</h3><ul>
+<li>Use <code>machine: true</code> will do</li>
+<li><code>checkout</code></li>
+<li>Remember to <code>run docker login -u $DOCKER_USER -p $DOCKER_PASSWORD</code>if your repo is private.<ul>
+<li>Set your <code>$DOCKER_USER</code> and <code>$DOCKER_PASSWORD</code> as environment variables under Project Settings &gt; Build Settings</li>
+</ul>
+</li>
+<li><code>docker build -t &lt;repo&gt;/&lt;name&gt; -f Dockerfile .</code></li>
+<li><code>docker push &lt;repo&gt;/&lt;name&gt;</code></li>
+</ul>
+<h3 id="Database-Migration"><a href="#Database-Migration" class="headerlink" title="Database Migration"></a>Database Migration</h3><p>As our db instance is a managed instance on GCP, we can specify a <code>DATABASE_URL</code> to our job. The DB will take a format of:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">postgres://&lt;user&gt;:&lt;password&gt;@&lt;host-ip&gt;:5432/&lt;db-name&gt;</span><br></pre></td></tr></table></figure></p>
+<p>However since we want the password to be a secret, the trick is to save the entire database url as a project environment variable (Project Settings &gt; Build Settings &gt; Environment Variables). </p>
+<p>We have to cat it into the Bash env that the job is running in. </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">- run: </span><br><span class="line">  name: define env variables at run time</span><br><span class="line">  command: |</span><br><span class="line">    echo &apos;export DATABASE_URL=$STAGING_DB_URL&apos; &gt;&gt; $BASH_ENV</span><br><span class="line">    source $BASH_ENV</span><br><span class="line">- run: RAILS_ENV=staging bundle exec rake db:migrate</span><br></pre></td></tr></table></figure>
+<p>This seems to be the only way it will work, by forcefully overwriting the DATABASE_URL that the job will require in order to connect to the psql instance. We tried all forms of string interpolation but that didn’t work either.</p>
+<h3 id="Deploy-to-Staging-or-Production"><a href="#Deploy-to-Staging-or-Production" class="headerlink" title="Deploy to Staging or Production"></a>Deploy to Staging or Production</h3><p>There are two options to be considered: </p>
+<h4 id="1-Run-as-Containers"><a href="#1-Run-as-Containers" class="headerlink" title="1. Run as Containers"></a>1. Run as Containers</h4><p>Initial Set Up</p>
+<ul>
+<li>Add db secrets to  <code>/root/.env</code></li>
+<li>Pull Nginx and Rails app image<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name app -e RAILS_ENV=staging --env-file=/root/.env &lt;repo&gt;/&lt;name&gt;</span><br><span class="line">docker run -d -p 80:80 --name web --link app:app &lt;repo&gt;/rails-nginx</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>Update Image</p>
+<ul>
+<li>SSH into staging vm</li>
+<li>Pull latest image</li>
+<li>Stop and remove container</li>
+<li>Start container running new image<ul>
+<li>Remember to set <code>-e RAILS_ENV=staging|production</code> when running new image </li>
+</ul>
+</li>
+</ul>
+<h4 id="2-Run-as-Docker-Swarm"><a href="#2-Run-as-Docker-Swarm" class="headerlink" title="2. Run as Docker Swarm"></a>2. Run as Docker Swarm</h4><p>Initial Set Up</p>
+<ul>
+<li>Set up a docker swarm on a vm (see previous post)<ul>
+<li>docker-compose file has to include db secrets</li>
+</ul>
+</li>
+</ul>
+<p>Update Image</p>
+<ul>
+<li>Update service <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker service update --force &lt;svc-name&gt;</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h2 id="End-of-Post"><a href="#End-of-Post" class="headerlink" title="End of Post"></a>End of Post</h2><p>It was a long and painful journey. Good things come to those who put themselves through bad times to get good things. (if that made any sense)</p>
+<p><img src="https://media.giphy.com/media/3ohc1a0nE5CcRTLdeg/giphy.gif" alt="Yay"></p>
+</div><div class="tags"><a class="tag-link" href="/tags/circleci/">circleci</a><a class="tag-link" href="/tags/docker/">docker</a><a class="tag-link" href="/tags/rails/">rails</a></div></section></div><div class="container"><ul class="nav"><li>Another one:<a href="/2019/04/04/2019-4-hello/">Blog Init</a></li><li>Previous one:<a href="/2018/12/24/dockerize-flask-part-two/">Learning Docker [Part 2]</a></li></ul></div><div id="backToTop"><div class="back-arrow back-arrow-left"></div><div class="back-arrow back-arrow-right"></div></div><footer class="container"><div class="rights"><span>Powered by </span><a href="http://hexo.io" target="_blank">Hexo</a><span>, Theme </span><a href="https://github.com/gary-Shen/hexo-theme-curry" target="_blank">Curry</a><span>.</span></div></footer><script src="/script/jquery.min.js"></script><link rel="stylesheet" href="/fancybox/jquery.fancybox.css"><script src="/fancybox/jquery.fancybox.pack.js"></script><script src="/script/index.js"></script><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+ga('create', 'UA-109820124-3', 'auto');
+ga('send', 'pageview');</script><script src="/script/jquery.min.js"></script><link rel="stylesheet" href="/fancybox/jquery.fancybox.css"><script src="/fancybox/jquery.fancybox.pack.js"></script><script src="/script/index.js"></script><script src="/script/post.js"></script></body></html>
